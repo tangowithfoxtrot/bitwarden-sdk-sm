@@ -14,6 +14,12 @@ defaults:
     shell: bash
     working-directory: languages/python
 
+env:
+  # minimum supported Python version
+  # will be EOL in October 2025
+  # https://devguide.python.org/versions/#supported-versions
+  PYTHON_VERSION: "3.9"
+
 jobs:
   generate_schemas:
     name: Generate schemas
@@ -46,14 +52,15 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - os: macos-13
-            target: x86_64-apple-darwin
+          # TODO: uncomment after testing...
+          # - os: macos-13
+          #   target: x86_64-apple-darwin
 
-          - os: macos-13
-            target: aarch64-apple-darwin
+          # - os: macos-13
+          #   target: aarch64-apple-darwin
 
-          - os: windows-2022
-            target: x86_64-pc-windows-msvc
+          # - os: windows-2022
+          #   target: x86_64-pc-windows-msvc
 
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
@@ -69,6 +76,11 @@ jobs:
         uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: 18
+
+      - name: Setup Python
+        uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55 # v5.5.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install rust
         uses: dtolnay/rust-toolchain@c5a29ddb4d9d194e7c84ec8c3fba61b1c31fee8c # stable
@@ -88,25 +100,25 @@ jobs:
           path: ${{ github.workspace }}/languages/python/bitwarden_sdk
 
       - name: Build wheels
-        if: ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' }}
+        # if: ${{ matrix.settings.target != 'x86_64-unknown-linux-gnu' }}
         uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab # v1.45.0
         with:
           target: ${{ matrix.settings.target }}
-          args: --release --find-interpreter --sdist
+          args: --release --sdist --interpreter python${{ env.PYTHON_VERSION }}
           sccache: "true"
           manylinux: "2_28" # https://github.com/pola-rs/polars/pull/12211
           working-directory: ${{ github.workspace }}/languages/python
 
-      - name: Build wheels (Linux - x86_64)
-        if: ${{ matrix.settings.target == 'x86_64-unknown-linux-gnu' }}
-        uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab # v1.45.0
-        with:
-          target: ${{ matrix.settings.target }}
-          args: --release --find-interpreter --sdist
-          container: quay.io/pypa/manylinux_2_28_x86_64:2023-11-20-745eb52
-          sccache: "true"
-          manylinux: "2_28" # https://github.com/pola-rs/polars/pull/12211
-          working-directory: ${{ github.workspace }}/languages/python
+      # - name: Build wheels (Linux - x86_64)
+      #   if: ${{ matrix.settings.target == 'x86_64-unknown-linux-gnu' }}
+      #   uses: PyO3/maturin-action@ea5bac0f1ccd0ab11c805e2b804bfcb65dac2eab # v1.45.0
+      #   with:
+      #     target: ${{ matrix.settings.target }}
+      #     args: --release --sdist --interpreter python${{ env.PYTHON_VERSION }}
+      #     container: quay.io/pypa/manylinux_2_28_x86_64:2023-11-20-745eb52
+      #     sccache: "true"
+      #     manylinux: "2_28" # https://github.com/pola-rs/polars/pull/12211
+      #     working-directory: ${{ github.workspace }}/languages/python
 
       - name: Upload wheels
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
