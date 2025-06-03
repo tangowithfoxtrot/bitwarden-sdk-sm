@@ -44,7 +44,7 @@ jobs:
     name: Building Python wheel for - ${{ matrix.settings.os }} - ${{ matrix.settings.target }}
     runs-on: ${{ matrix.settings.os || 'ubuntu-24.04' }}
     needs:
-      # - generate_schemas # TODO: uncomment after testing... This takes like 20 minutes :(
+      - generate_schemas
       - setup
     env:
       _PACKAGE_VERSION: ${{ needs.setup.outputs.package_version }}
@@ -108,6 +108,7 @@ jobs:
           sccache: "true"
           manylinux: "2_28" # https://github.com/pola-rs/polars/pull/12211
           working-directory: ${{ github.workspace }}/languages/python
+          before-script-linux: python${{ env.PYTHON_VERSION }} -m ensurepip --upgrade
 
       # - name: Build wheels (Linux - x86_64)
       #   if: ${{ matrix.settings.target == 'x86_64-unknown-linux-gnu' }}
